@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriTriage — Agriculture Support Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">⟁</span>
+      <span class="logo-text">AgriTriage</span>
+      <span class="logo-badge">AI</span>
+    </div>
+    <nav class="nav-pills">
+      <span class="pill active" onclick="showTab('triage', this)">⟁ Triage</span>
+      <span class="pill" onclick="showTab('quiz', this)">🌾 Quiz</span>
+    </nav>
+    <div class="header-status">
+      <span class="status-dot pulse"></span>
+      <span class="status-text">Agent Online</span>
+    </div>
+  </header>
+
+  <!-- Main layout -->
+  <main>
+    <!-- ═══ TRIAGE TAB ═══ -->
+    <div id="triageTab" class="layout">
+
+      <!-- LEFT: Input Panel -->
+      <section class="panel input-panel">
+        <div class="panel-label">INCOMING MESSAGE</div>
+        <h2 class="panel-title">Submit Communication</h2>
+
+        <div class="field-group">
+          <label class="field-label">Sender Name</label>
+          <input class="field-input" id="senderName" type="text" placeholder="e.g. Ramesh Kumar" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Sender Email</label>
+          <input class="field-input" id="senderEmail" type="email" placeholder="farmer@example.com" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Message</label>
+          <textarea class="field-input field-textarea" id="messageInput"
+            placeholder="Paste or type the incoming farmer/field communication here…&#10;&#10;Example: My wheat crop in Vidisha district is showing yellow patches since last Tuesday. Farmer ID: F-2847. Please advise urgently."></textarea>
+        </div>
+
+        <div class="samples-label">Quick samples ↓</div>
+        <div class="samples">
+          <button class="sample-btn" data-msg="URGENT: My entire paddy field (4 acres) near Hoshangabad is flooded due to canal overflow. Farmer ID: F-1923. All plants submerged since yesterday evening. Need immediate help!">🌊 Flood Emergency</button>
+          <button class="sample-btn" data-msg="Noticed some white flies on my cotton crop in Indore block. Not too bad yet, maybe 10% leaves affected. ID: F-3341. What spray should I use?">🦟 Pest Query</button>
+          <button class="sample-btn" data-msg="Dear sir, I want to know the status of my KCC loan application submitted on March 10th. My farmer ID is F-0092. Please update.">📋 Loan Status</button>
+          <button class="sample-btn" data-msg="My drip irrigation system motor burned out 2 days ago. Tomato crop in Sehore will die without water in 48 hours. ID: F-5512. Urgent repair needed!">💧 Irrigation Crisis</button>
+        </div>
+
+        <button class="triage-btn" id="triageBtn" onclick="runTriage()">
+          <span class="btn-icon">⟁</span>
+          <span class="btn-text">Run Triage Analysis</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <div class="api-config">
+          <label class="field-label">API Endpoint</label>
+          <input class="field-input field-small" id="apiEndpoint" value="http://localhost:8000/api/triage" />
+        </div>
+      </section>
+
+      <!-- RIGHT: Results Panel -->
+      <section class="panel results-panel" id="resultsPanel">
+
+        <!-- Idle state -->
+        <div class="idle-state" id="idleState">
+          <div class="idle-icon">⟁</div>
+          <p class="idle-text">Submit a message to begin triage analysis</p>
+          <p class="idle-sub">The agent will classify urgency, extract entities, and generate a draft response</p>
+        </div>
+
+        <!-- Loading state -->
+        <div class="loading-state hidden" id="loadingState">
+          <div class="loader-ring"></div>
+          <div class="loading-steps">
+            <div class="load-step active" id="step1">⟁ Classifying urgency & intent…</div>
+            <div class="load-step" id="step2">⟁ Extracting named entities…</div>
+            <div class="load-step" id="step3">⟁ Generating draft response…</div>
+            <div class="load-step" id="step4">⟁ Compiling triage report…</div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-content hidden" id="resultsContent">
+
+          <div class="urgency-banner" id="urgencyBanner">
+            <div class="urgency-left">
+              <span class="urgency-label">URGENCY</span>
+              <span class="urgency-level" id="urgencyLevel">HIGH</span>
+            </div>
+            <div class="urgency-score-wrap">
+              <svg class="score-ring" viewBox="0 0 60 60">
+                <circle class="ring-bg" cx="30" cy="30" r="24"/>
+                <circle class="ring-fill" id="ringFill" cx="30" cy="30" r="24"
+                        stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+              </svg>
+              <span class="score-num" id="scoreNum">0</span>
+            </div>
+            <div class="urgency-right">
+              <span class="intent-label">INTENT</span>
+              <span class="intent-value" id="intentValue">—</span>
+            </div>
+          </div>
+
+          <div class="summary-bar" id="summaryBar">
+            <span class="summary-icon">📋</span>
+            <span id="summaryText">—</span>
+          </div>
+
+          <div class="section-title">Extracted Entities <span class="badge-ner">NER</span></div>
+          <div class="entities-grid" id="entitiesGrid"></div>
+
+          <div class="section-title">Draft Response <span class="badge-llm">LLM</span></div>
+          <div class="draft-box">
+            <div class="draft-text" id="draftText">—</div>
+            <div class="draft-actions">
+              <button class="action-btn" onclick="copyDraft()">Copy</button>
+              <button class="action-btn action-btn-primary" onclick="sendDraft()">Send Draft</button>
+            </div>
+          </div>
+
+          <div class="meta-row">
+            <span class="meta-item" id="metaTime">⏱ 0ms</span>
+            <span class="meta-item">Model: llama3-8b-instant</span>
+            <span class="meta-item">Agent: LangChain + Groq</span>
+          </div>
+
+        </div>
+
+        <!-- Error state -->
+        <div class="error-state hidden" id="errorState">
+          <div class="error-icon">⚠</div>
+          <p class="error-title" id="errorTitle">Agent Error</p>
+          <p class="error-msg" id="errorMsg">Something went wrong.</p>
+          <button class="action-btn" onclick="resetUI()">Try Again</button>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- ═══ QUIZ TAB ═══ -->
+    <div id="quizTab" class="quiz-wrapper hidden">
+      <iframe src="/static/genaiindex.html" id="quizFrame" title="FarmWise Quiz"></iframe>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
