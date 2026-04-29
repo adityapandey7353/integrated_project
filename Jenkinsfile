@@ -6,6 +6,7 @@ pipeline {
         APP_NAME = 'agri-triage'
         IMAGE_NAME = "${DOCKER_HUB_USER}/${APP_NAME}"
         DOCKER_HUB_CREDENTIALS_ID = 'docker-hub-credentials'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
