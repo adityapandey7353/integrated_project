@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agri-triage-deployment
+  labels:
+    app: agri-triage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agri-triage
+  template:
+    metadata:
+      labels:
+        app: agri-triage
+    spec:
+      containers:
+      - name: agri-triage
+        image: aaditya0421/agri-triage:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agri-triage-secrets
+              key: GROQ_API_KEY
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: agri-triage-secrets
+              key: SUPABASE_URL
+        - name: SUPABASE_ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agri-triage-secrets
+              key: SUPABASE_ANON_KEY
